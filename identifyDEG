@@ -1,0 +1,25 @@
+function DEG=identifyDEG(Result,AP,ttest_Pcut,FC_cut,Pcom_cut)
+
+% Result : Result (structure file) obtained from DEGstat function
+% AP : Absent(0)/Present(1) calls consists of 1/0 vector (the length is the same with the number of genes)
+
+% ttest_Pcut : cutoff for the P-value of t-test, possibly, ttest_Pcut should be 0-to-1
+% FC_cut : cutoff for the log2-fold-change, possibly, FC_cut>=0
+% Pcom_cut : cutoff for the combined P-value, possibly, Pcom_cut should be 0-to-1
+
+
+DEG=zeros(size(Result.Pt));
+
+%% Identification of DEGs
+for i=1:size(Result.Pt,1)
+    for j=1:size(Result.Pt,2)
+        if (AP(i,1)==1)&&(Result.Pt(i,j)<ttest_Pcut)&&(Result.Pcom(i,j)<Pcom_cut)&&(Result.FC(i,j)>FC_cut)
+            DEG(i,j)=1;
+        elseif (AP(i,1)==1)&&(Result.Pt(i,j)<ttest_Pcut)&&(Result.Pcom(i,j)<Pcom_cut)&&(Result.FC(i,j)<-FC_cut)
+            DEG(i,j)=3;
+        else DEG(i,j)=2;
+        end
+    end
+end
+
+end
