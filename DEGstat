@@ -16,6 +16,9 @@ rT(isnan(rT)==1)=0;
 % t_opt=1 : one sample and paired t-test
 % t_opt=2 : two sample t-test, unequal variance
 
+% s_adj : spreadness-adjustment (using madnorm)
+% if s_adj == 1 then we perform the adjustment; else we do not
+
 %% Calculation of p-values for t-test and fold change test
 if t_opt==1    
     for j=1:(size(treat,2)/n_treat)
@@ -24,10 +27,24 @@ if t_opt==1
         Result.T(isnan(Result.T(:,j))==1,j)=0;      % Expression이 전부 0인경우 T-test결과 NaN이 나옴
         Result.T(find(Result.T(:,j)==inf),j)=max(Result.T(Result.T(:,j)~=inf,j),[],1);       % T=inf의 경우 max(T)로
         Result.T(find(Result.T(:,j)==-inf),j)=min(Result.T(Result.T(:,j)~=-inf,j),[],1);      % T=-inf의 경우 min(T)로
-        Result.Pt(:,j)=pval2tail(rT(:),Result.T(:,j));
         
         Result.FC(:,j)=nanmedian(treat(:,(n_treat*(j-1)+1):(n_treat*j))-cont,2);
-        Result.Pf(:,j)=pval2tail(rF(:),Result.FC(:,j));
+        
+        % spreadness-adjustment
+        if s_adj == 1
+            tobs=Result.T(:,j);
+            tobs2=madnorm(tobs,rT(:));
+            Result.Pt(:,j)=pval2tail(rT(:),tobs2);
+            
+            fcobs=Result.FC(:,j);
+            fcobs2=madnorm(fcobs,rF(:));
+            Result.Pf(:,j)=pval2tail(rF(:),fcobs2);
+            
+            clear tobs tobs2 fcobs fcobs2;
+        else
+            Result.Pt(:,j)=pval2tail(rT(:),Result.T(:,j));
+            Result.Pf(:,j)=pval2tail(rF(:),Result.FC(:,j));
+        end
         
         clear t1;
     end
@@ -39,10 +56,25 @@ elseif t_opt==2
         Result.T(isnan(Result.T(:,j))==1,j)=0;      % Expression이 전부 0인경우 T-test결과 NaN이 나옴
         Result.T(find(Result.T(:,j)==inf),j)=max(Result.T(Result.T(:,j)~=inf,j),[],1);       % T=inf의 경우 max(T)로
         Result.T(find(Result.T(:,j)==-inf),j)=min(Result.T(Result.T(:,j)~=-inf,j),[],1);      % T=-inf의 경우 min(T)로
-        Result.Pt(:,j)=pval2tail(rT(:),Result.T(:,j));
-        
+                
         Result.FC(:,j)=nanmedian(treat(:,(n_treat*(j-1)+1):(n_treat*j)),2)-nanmedian(cont,2);
-        Result.Pf(:,j)=pval2tail(rF(:),Result.FC(:,j));
+
+        % spreadness-adjustment
+        if s_adj == 1
+            tobs=Result.T(:,j);
+            tobs2=madnorm(tobs,rT(:));
+            Result.Pt(:,j)=pval2tail(rT(:),tobs2);
+            
+            fcobs=Result.FC(:,j);
+            fcobs2=madnorm(fcobs,rF(:));
+            Result.Pf(:,j)=pval2tail(rF(:),fcobs2);
+            
+            clear tobs tobs2 fcobs fcobs2;
+        else
+            Result.Pt(:,j)=pval2tail(rT(:),Result.T(:,j));
+            Result.Pf(:,j)=pval2tail(rF(:),Result.FC(:,j));
+        end
+        
         clear t2;
     end
 end
@@ -172,4 +204,16 @@ end
 plot(px,d(:,end),'g.'); hold on;
 plot(px(ind),d(ind,end),'mo');
 axis([0 1 0 1]);
+end
+
+
+% MAD (median absolute deviation) normalization
+
+function obs2 = madnorm(obs,rnd)
+
+mad=nanmedian(abs(obs-nanmedian(obs)));
+rmad=nanmedian(abs(rnd-nanmedian(rnd)));
+obs2=obs*rmad/mad;
+obs2=obs2-nanmedian(obs2)+nanmedian(rnd);
+
 end
