@@ -109,4 +109,9 @@ elseif t_opt==2
     
     end
 end
+
+% In order to use 'DEG_stat' and 'interp1' functions, null distribution
+% should not have Inf and -Inf values. (NaN can be ignored in the calculation of p values)
+rT(rT==Inf | rT==-inf) = NaN;
+rF(rF==Inf | rF==-inf) = NaN;
 end
